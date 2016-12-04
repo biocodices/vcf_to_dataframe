@@ -9,7 +9,7 @@ from vcf_to_dataframe.helpers import make_chromosome_series_categorical
 
 GENO_REGEX = re.compile(r'([\d|\.](?:[/|\|][\d|\.])?)')
 
-def vcf_to_dataframe(vcf_path, keep_samples=[], keep_format_data=False):
+def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
     """
     Generates a pandas.DataFrame of the variants present in a VCF. Removes
     the duplicated rows.
@@ -31,6 +31,8 @@ def vcf_to_dataframe(vcf_path, keep_samples=[], keep_format_data=False):
         for sample in keep_samples:
             if not sample in header:
                 raise ValueError('"{}" not found in this VCF'.format(sample))
+    else:
+        keep_samples = []
 
     usecols = header[:9] + keep_samples
 
