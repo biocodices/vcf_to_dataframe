@@ -1,1 +1,1 @@
-from vcf_to_dataframe.vcf_to_dataframe import vcf_to_dataframe
+from vcf_to_dataframe.vcf_to_dataframe import vcf_to_dataframe, available_samples

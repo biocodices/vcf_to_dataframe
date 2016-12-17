@@ -1,6 +1,5 @@
 import re
 
-import vcf
 import gzip
 import pandas as pd
 
@@ -8,6 +7,7 @@ from vcf_to_dataframe.helpers import make_chromosome_series_categorical
 
 
 GENO_REGEX = re.compile(r'([\d|\.](?:[/|\|][\d|\.])?)')
+
 
 def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
     """
@@ -22,14 +22,14 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
     each genotype call, e.g. AD, DP, GQ, etc. If not, it will only keep the
     genotypes (GT).
     """
-    header = _header_from_vcf(vcf_path, gzipped=vcf_path.endswith('.gz'))
+    header = _header_from_vcf(vcf_path)
 
     if keep_samples:
         if isinstance(keep_samples, str):
             keep_samples = [keep_samples]
 
         for sample in keep_samples:
-            if not sample in header:
+            if sample not in header:
                 raise ValueError('"{}" not found in this VCF'.format(sample))
     else:
         keep_samples = []
@@ -50,10 +50,11 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
 
     return df
 
-def _header_from_vcf(vcf_path, gzipped=False):
+
+def _header_from_vcf(vcf_path):
     """Read the header from a VCF file and return the found field names. It
     will gunzip on the fly if the path ends with '.gz' or if gzipped is set."""
-    fn_open = gzip.open if gzipped else open
+    fn_open = gzip.open if vcf_path.endswith('.gz') else open
 
     with fn_open(vcf_path, 'rb') as vcf_file:
         for line in vcf_file:
@@ -61,6 +62,12 @@ def _header_from_vcf(vcf_path, gzipped=False):
                 line = line.decode('utf-8')
             if line.startswith('#CHROM'):
                 return line.strip().replace('#CHROM', 'CHROM').split('\t')
+
+
+def available_samples(vcf_path):
+    """Return a list of the sample IDs present in a VCF header."""
+    return _header_from_vcf(vcf_path)[9:]
+
 
 def _extract_genos_and_make_them_categorical(df):
     """Extract the genotypes from the format fields of the VCF and make them
@@ -71,6 +78,7 @@ def _extract_genos_and_make_them_categorical(df):
     # Cast genotypes as category since it's MUCH more memory efficient
     df.iloc[:, 9:] = df.iloc[:, 9:].apply(
             lambda series: series.astype('category'))
+
 
 def _extract_genotype(geno_field):
     """Extract the genotype from a format field."""
