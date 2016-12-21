@@ -4,16 +4,20 @@ import gzip
 
 import pytest
 
-from vcf_to_dataframe import vcf_to_dataframe
+from vcf_to_dataframe import vcf_to_dataframe, available_samples
 
 
 TEST_DIR = dirname(realpath(__file__))
 
 
-def _test_file(filename):
-    return join(TEST_DIR, filename)
+TEST_PARAMS = [
+    ('sample.vcf.gz', True),
+    ('sample.vcf', False)
+]
 
-def _test_vcf_to_dataframe(filename, gzipped):
+
+@pytest.mark.parametrize('filename,gzipped', TEST_PARAMS)
+def test_vcf_to_dataframe(filename, gzipped):
     vcf_path = _test_file(filename)
 
     df = vcf_to_dataframe(vcf_path)
@@ -22,14 +26,7 @@ def _test_vcf_to_dataframe(filename, gzipped):
     assert sample_id not in df.columns
 
     # Read the file "manually" to compare the data
-    if gzipped:
-        with gzip.open(vcf_path) as f:
-            rows = [line.decode('utf-8') for line in f.readlines()
-                    if line and not line.startswith(b'#')]
-    else:
-        with open(vcf_path) as f:
-            rows = [line for line in f.readlines()
-                    if line and not line.startswith('#')]
+    rows = read_file(vcf_path, gzipped)
 
     records = [re.split(r'\s+', row) for row in rows]
     seen_ids = set(record[2] for record in records)
@@ -42,9 +39,34 @@ def _test_vcf_to_dataframe(filename, gzipped):
     with pytest.raises(ValueError):
         vcf_to_dataframe(vcf_path, keep_samples='non existent')
 
-def test_vcf_to_dataframe_gzipped():
-    _test_vcf_to_dataframe('files/sample.vcf.gz', gzipped=True)
 
-def test_vcf_to_dataframe():
-    _test_vcf_to_dataframe('files/sample.vcf', gzipped=False)
+@pytest.mark.parametrize('filename,gzipped', TEST_PARAMS)
+def test_available_samples(filename, gzipped):
+    vcf_path = _test_file(filename)
+    found_samples = available_samples(vcf_path)
+
+    # Read the file "manually" to compare the data
+    header = [line for line in read_file(vcf_path, gzipped, keep_header=True)
+              if line.startswith('#CHROM')][0]
+    expected_samples = header.split('\tFORMAT\t')[-1].split('\t')
+
+    assert found_samples == expected_samples
+
+
+def read_file(path, gzipped, keep_header=False):
+    if gzipped:
+        with gzip.open(path) as f:
+            lines = [line.decode('utf-8').strip() for line in f.readlines()]
+    else:
+        with open(path) as f:
+            lines = [line.strip() for line in f.readlines()]
+
+    if not keep_header:
+        lines = [line for line in lines if not line.startswith('#')]
+
+    return lines
+
+
+def _test_file(filename):
+    return join(TEST_DIR, 'files', filename)
 
