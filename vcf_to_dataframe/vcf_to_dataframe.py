@@ -48,7 +48,7 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
 
     df['chrom'] = make_chromosome_series_categorical(df['chrom'])
 
-    return df
+    return df.drop_duplicates()
 
 
 def _header_from_vcf(vcf_path):
