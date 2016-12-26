@@ -43,12 +43,17 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
     if keep_samples and not keep_format_data:
         _extract_genos_and_make_them_categorical(df)
 
-    for col in 'ref alt filter'.split():
+    for col in 'ref filter'.split():
         df[col] = df[col].astype('category')
 
     df['chrom'] = make_chromosome_series_categorical(df['chrom'])
 
-    return df.drop_duplicates()
+    df = df.drop_duplicates()
+
+    # The conversion to list would make the .drop_duplicates() fail:
+    df['alt'] = df['alt'].map(lambda alleles: alleles.split(','))
+
+    return df
 
 
 def _header_from_vcf(vcf_path):
