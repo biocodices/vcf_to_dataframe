@@ -50,7 +50,8 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
 
     df = df.drop_duplicates()
 
-    # The conversion to list would make the .drop_duplicates() fail:
+    # These parsings need to happen after the call to drop_duplicates()
+    df['info'] = df['info'].map(_parse_info_line)
     df['alt'] = df['alt'].map(lambda alleles: alleles.split(','))
 
     return df
@@ -92,4 +93,19 @@ def _extract_genotype(geno_field):
     if not GENO_REGEX.search(geno):
         raise ValueError('"{}" does not look like a genotype'.format(geno))
     return geno
+
+
+def _parse_info_line(info_line):
+    info_dict = {}
+
+    for element in info_line.split(';'):
+        try:
+            key, value = element.split('=')
+        except ValueError:
+            key = element
+            value = None
+
+        info_dict[key] = value
+
+    return info_dict
 

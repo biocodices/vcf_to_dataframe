@@ -36,6 +36,11 @@ def test_vcf_to_dataframe(filename, gzipped):
     df = vcf_to_dataframe(vcf_path, keep_samples=sample_id)
     assert sample_id in df.columns
 
+    # Check the INFO field is read as a dictionary
+    first_info_dict = df['info'].iloc[0]
+    assert isinstance(first_info_dict, dict)
+    assert first_info_dict['AN'] == '5008'
+
     with pytest.raises(ValueError):
         vcf_to_dataframe(vcf_path, keep_samples='non existent')
 
