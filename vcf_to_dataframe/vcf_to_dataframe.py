@@ -62,7 +62,7 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
 
     df['chrom'] = make_chromosome_series_categorical(df['chrom'])
 
-    # These duplicate drop must happen before the following parsings, or else
+    # This drop_duplicates() must happen before the following parsings, or else
     # it will raise an Exception:
     df = df.drop_duplicates()
 
