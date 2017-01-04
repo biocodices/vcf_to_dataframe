@@ -10,6 +10,7 @@ from vcf_to_dataframe import vcf_to_dataframe, available_samples
 TEST_DIR = dirname(realpath(__file__))
 
 
+SAMPLE_IDS = ['HG00096', 'HG00097']
 TEST_PARAMS = [
     ('sample.vcf.gz', True),
     ('sample.vcf', False)
@@ -17,37 +18,65 @@ TEST_PARAMS = [
 
 
 @pytest.mark.parametrize('filename,gzipped', TEST_PARAMS)
-def test_vcf_to_dataframe(filename, gzipped):
-    vcf_path = _test_file(filename)
-
-    df = vcf_to_dataframe(vcf_path)
-    sample_id = 'HG00096'
+def test_basic_functionality(filename, gzipped):
+    df = vcf_to_dataframe(_test_file(filename))
     assert len(df['chrom'].cat.categories) == 5
-    assert sample_id not in df.columns
+
+    # Genotypes *not* read by default:
+    assert all(sample_id not in df.columns for sample_id in SAMPLE_IDS)
 
     # Read the file "manually" to compare the data
-    rows = read_file(vcf_path, gzipped)
-
+    rows = read_file(_test_file(filename), gzipped)
     records = [re.split(r'\s+', row) for row in rows]
     seen_ids = set(record[2] for record in records)
-
     assert seen_ids == set(df['id'].unique())
-
-    df = vcf_to_dataframe(vcf_path, keep_samples=sample_id)
-    assert sample_id in df.columns
 
     # Check the INFO field is read as a dictionary
     first_info_dict = df['info'].iloc[0]
     assert isinstance(first_info_dict, dict)
     assert first_info_dict['AN'] == '5008'
 
+
+@pytest.mark.parametrize('filename,gzipped', TEST_PARAMS)
+def test_genotypes_are_read_ok(filename, gzipped):
+    sample_id = SAMPLE_IDS[0]
+
+    df = vcf_to_dataframe(_test_file(filename), keep_samples=sample_id)
+    assert sample_id in df.columns
+
+    # Check category dtypes
+    for col in ['chrom', 'ref', 'filter', sample_id]:
+        assert df[sample_id].dtype == 'category'
+
+@pytest.mark.parametrize('filename,gzipped', TEST_PARAMS)
+def test_error_if_sample_not_present(filename, gzipped):
     with pytest.raises(ValueError):
-        vcf_to_dataframe(vcf_path, keep_samples='non existent')
+        vcf_to_dataframe(_test_file(filename), keep_samples='non_existent')
+
+
+@pytest.mark.parametrize('filename,gzipped', TEST_PARAMS)
+def test_genotype_metadata_are_read_ok(filename, gzipped):
+    df = vcf_to_dataframe(_test_file(filename), keep_samples=SAMPLE_IDS,
+                          keep_format_data=True)
+    assert 'GT' in df.columns
+    assert all(sample_id not in df.columns for sample_id in SAMPLE_IDS)
+
+    # Check there's one row per variant & sample
+    variant_id = 'rs870124'
+    variant_rows = df[df['id'] == variant_id]
+    assert len(variant_rows) == len(SAMPLE_IDS)
+    assert set(variant_rows['sample_id']) == set(SAMPLE_IDS)
+
+    # Check one random genotype to make sure we're reading it correctly
+    heterozygous_variant = df.loc[(df['id'] == variant_id) &
+                                  (df['sample_id'] == 'HG00097')]
+    assert heterozygous_variant.iloc[0]['GT'] == '0|1'
 
 
 @pytest.mark.parametrize('filename,gzipped', TEST_PARAMS)
 def test_available_samples(filename, gzipped):
     vcf_path = _test_file(filename)
+
     found_samples = available_samples(vcf_path)
 
     # Read the file "manually" to compare the data
