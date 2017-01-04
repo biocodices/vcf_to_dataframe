@@ -129,12 +129,12 @@ def _info_line_as_dict(info_line):
 
 def _unfold_genotype_data(df):
     """
-    Given a dataframe with the standard VCF fields genotypes and genotypes
-    columns, unfold each genotype column's data (GT, DP, GQ, etc.) adding
-    a new column for each metadata category.
+    Given a dataframe with the standard VCF fields and genotypes columns,
+    unfold each genotype column's data (GT, DP, GQ, etc.) adding a new column
+    for each metadata category.
 
-    The result will be a tidy dataframe that will have one row per combination
-    of sample & variant.
+    The result will be a tidy dataframe with one row per combination of sample
+    and variant.
     """
     sample_ids = list(df.columns[9:])
     # ^ The sample IDs come after the 9 VCF standard fields
