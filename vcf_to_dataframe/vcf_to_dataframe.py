@@ -22,7 +22,7 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
     If keep_format_data=False, it will only keep the genotypes (GT), with one
     column per sample.
 
-    If you set keep_format_data=True, it will keep the metadata for each
+    If keep_format_data=True, it will keep the metadata for each
     genotype call, e.g. AD, DP, GQ, etc. and for each variant. This means that
     for each variant there will now be many rows, one per sample, with all the
     genotype metadata (GQ, AD, DP) in new columns.
