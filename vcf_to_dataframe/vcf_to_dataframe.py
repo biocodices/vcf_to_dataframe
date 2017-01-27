@@ -1,10 +1,15 @@
 import re
 from functools import partial
+import warnings
 
 import gzip
 import pandas as pd
 
-from .helpers import make_chromosome_series_categorical
+from .helpers import (
+    make_chromosome_series_categorical,
+    nan_to_None,
+    dot_to_None,
+)
 
 
 GENO_REGEX = re.compile(r'([\d|\.](?:[/|\|][\d|\.])?)')
@@ -20,7 +25,7 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
     to set keep_samples explicitely with a sample ID or a list of sample IDs.
 
     If keep_format_data=False, it will only keep the genotypes (GT), with one
-    column per sample.
+    column per sample. This option only makes sense if keep_samples is set.
 
     If keep_format_data=True, it will keep the metadata for each
     genotype call, e.g. AD, DP, GQ, etc. and for each variant. This means that
@@ -38,6 +43,12 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
                 raise ValueError('"{}" not found in this VCF'.format(sample))
     else:
         keep_samples = []
+
+        if keep_format_data:
+            warnings.warn('the option to "keep_format_data" only makes sense '
+                          'if "keep_samples" is set. If not, the option is '
+                          'just ignored, since there are no genotypes with '
+                          'FORMAT data to display.')
 
     usecols = vcf_header[:9] + keep_samples  # 9 = number of standard VCF fields
     df = pd.read_table(vcf_path, comment='#', names=vcf_header,
@@ -70,6 +81,28 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
 
     # Make the ALT alleles field always a list:
     df['alt'] = df['alt'].map(lambda alleles: alleles.split(','))
+
+    integer_fields = [
+        'DP',
+        'GQ',
+        'RGQ',
+    ]
+    for field in integer_fields:
+        if field in df:
+            df[field] = (df[field]
+                         .map(nan_to_None).map(dot_to_None)
+                         .map(int, na_action='ignore'))
+
+    list_fields = [
+        'AD',
+        'PL',
+    ]
+    for field in list_fields:
+        if field in df:
+            df[field] = (df[field]
+                         .map(nan_to_None).map(dot_to_None)
+                         .map(lambda value: tuple(value.split(',')),
+                              na_action='ignore'))
 
     return df
 

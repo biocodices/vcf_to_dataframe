@@ -3,8 +3,13 @@ import re
 import gzip
 
 import pytest
+import pandas as pd
 
 from vcf_to_dataframe import vcf_to_dataframe, available_samples
+from vcf_to_dataframe.helpers import (
+    nan_to_None,
+    dot_to_None,
+)
 
 
 TEST_DIR = dirname(realpath(__file__))
@@ -47,6 +52,7 @@ def test_genotypes_are_read_ok(filename, gzipped):
     # Check category dtypes
     for col in ['chrom', 'ref', 'filter', sample_id]:
         assert df[sample_id].dtype == 'category'
+
 
 @pytest.mark.parametrize('filename,gzipped', TEST_PARAMS)
 def test_error_if_sample_not_present(filename, gzipped):
@@ -99,6 +105,19 @@ def read_file(path, gzipped, keep_header=False):
         lines = [line for line in lines if not line.startswith('#')]
 
     return lines
+
+
+def test_dot_to_None():
+    series = pd.Series(['foo', 'bar', '.', 'baz', '.'])
+    result = series.map(dot_to_None)
+    assert list(result) == ['foo', 'bar', None, 'baz', None]
+
+
+def test_nan_to_None():
+    series = pd.Series([1.0, 2.0, None])  # Nones converted to NaN by pandas
+    series.loc[0] = '1'  # Now it's an 'object' series
+    result = series.map(nan_to_None)
+    assert list(result) == ['1', 2.0, None]
 
 
 def _test_file(filename):

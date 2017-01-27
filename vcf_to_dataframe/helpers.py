@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def make_chromosome_series_categorical(series):
     """
     Receives a pandas Series with chromosomes and returns a new categorical
@@ -13,4 +16,19 @@ def make_chromosome_series_categorical(series):
     new_series = new_series.astype('category', categories=chromosomes,
                                    ordered=True)
     return new_series
+
+
+def nan_to_None(value):
+    """Given an arbitrary value, replace NaN with None or return unchanged."""
+    try:
+        is_nan = np.isnan(value)
+    except TypeError:
+        is_nan = False
+
+    return None if is_nan else value
+
+
+def dot_to_None(value):
+    """Given an arbitrary value, replace '.' with None or return unchanged."""
+    return None if value == '.' else value
 
