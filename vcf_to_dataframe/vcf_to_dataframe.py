@@ -93,16 +93,16 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
                          .map(nan_to_None).map(dot_to_None)
                          .map(int, na_action='ignore'))
 
-    list_fields = [
+    integer_list_fields = [
         'AD',
         'PL',
     ]
-    for field in list_fields:
+    for field in integer_list_fields:
         if field in df:
-            df[field] = (df[field]
-                         .map(nan_to_None).map(dot_to_None)
-                         .map(lambda value: tuple(value.split(',')),
-                              na_action='ignore'))
+            df[field] = \
+                (df[field].map(nan_to_None).map(dot_to_None)
+                 .map(lambda value: tuple(int(n) for n in value.split(',')),
+                      na_action='ignore'))
 
     return df
 
