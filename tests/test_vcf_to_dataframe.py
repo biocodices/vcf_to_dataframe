@@ -5,7 +5,13 @@ import gzip
 import pytest
 import pandas as pd
 
-from vcf_to_dataframe import vcf_to_dataframe, available_samples
+from vcf_to_dataframe import (
+    vcf_to_dataframe,
+    available_samples,
+)
+from vcf_to_dataframe.vcf_to_dataframe import (
+    _count_comment_rows,
+)
 from vcf_to_dataframe.helpers import (
     nan_to_None,
     dot_to_None,
@@ -105,6 +111,12 @@ def read_file(path, gzipped, keep_header=False):
         lines = [line for line in lines if not line.startswith('#')]
 
     return lines
+
+
+@pytest.mark.parametrize('filename,gzipped', TEST_PARAMS)
+def test_count_comment_rows(filename, gzipped):
+    filepath = _test_file(filename)
+    assert _count_comment_rows(filepath) == 258
 
 
 def test_dot_to_None():
