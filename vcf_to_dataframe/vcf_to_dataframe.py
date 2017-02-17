@@ -24,6 +24,9 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
     read any of the genotypes. In case you want to keep the genotypes, you have
     to set keep_samples explicitely with a sample ID or a list of sample IDs.
 
+    keep_samples='ALL' is treated specially: all samples will be kept. Don't
+    use with VCFs with lots of samples, like 1000 Genomes 2,504 samples!
+
     If keep_format_data=False, it will only keep the genotypes (GT), with one
     column per sample. This option only makes sense if keep_samples is set.
 
@@ -33,6 +36,10 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
     genotype metadata (GQ, AD, DP) in new columns.
     """
     vcf_header = _header_from_vcf(vcf_path)
+
+    if keep_samples == 'ALL':
+        keep_samples = available_samples(vcf_path)
+
     keep_samples = _parse_samples(keep_samples, vcf_header)
 
     if not keep_samples and keep_format_data:
