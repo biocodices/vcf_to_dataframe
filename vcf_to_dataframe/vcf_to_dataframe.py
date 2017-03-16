@@ -59,9 +59,10 @@ def vcf_to_dataframe(vcf_path, keep_samples=None, keep_format_data=False):
     if keep_samples:
         if keep_format_data:
             df = _unfold_genotype_data(df)
-            # Cast genotypes as category since it's MUCH more memory efficient
-            # In this case, genotypes will all be in the column 'GT':
-            df['GT'] = df['GT'].astype('category')
+            if 'GT' in df:
+                # Cast genotypes as category since it's MUCH more memory
+                # efficient:
+                df['GT'] = df['GT'].astype('category')
         else:
             _extract_genos(df)
             # Cast genotypes as category since it's MUCH more memory efficient
